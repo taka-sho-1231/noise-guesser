@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 from .diffuser import Diffuser
+from .utils import get_random_image, preprocess_image
 
 
 class NoiseGuesser:
@@ -20,14 +21,14 @@ class NoiseGuesser:
         
         # decide using random image or given image
         if path_to_image is None:
-            image = self.get_random_image()
+            image = get_random_image(self.path_to_images_dir)
         else:
             image = Image.open(path_to_image)
             
         # decide t using random value
         t = random.randint(1, self.num_time_steps+1)
         
-        image = self.preprocess_image(image, self.image_size)
+        image = preprocess_image(image, self.image_size, False)
         
         # make_noisy_image(t, max)
         image_t, image_T, _= self.diffuser.add_noise(image, t, return_x_T=True)
@@ -50,7 +51,7 @@ class NoiseGuesser:
         diff_db = 20 * np.log10(diff)
         square_error = diff ** 2
         
-        print(f"Answer: {t}, Diff: {diff}, Diff in dB: {diff_db}, Square error: {square_error}")
+        print(f"Answer: {t}, Diff: {diff}, Diff in dB: {diff_db:.3f}, Square error: {square_error}")
         
         while True:
             yn_retry = input("再挑戦しますか？(y/n): ")
@@ -84,20 +85,4 @@ class NoiseGuesser:
         
         plt.show()
         
-    def get_random_image(self):
-        image_name_list = os.listdir(self.path_to_images_dir)
-        image_name = image_name_list[random.randint(0, len(image_name_list) - 1)]
-        path_to_random_image = os.path.join(self.path_to_images_dir, image_name)
-        image = Image.open(path_to_random_image)
-        return image
-    
-    def preprocess_image(self, image: Image, size: int) -> np.ndarray:
-        if image.size[0] > image.size[1]:
-            h = size
-            w = int(size * image.size[0] / image.size[1])
-        else:
-            w = size
-            h = int(size * image.size[1] / image.size[0])
-        image_resized = np.array(image.resize((w, h)))
-        image_resized = image_resized / 255.0
-        return image_resized
+
